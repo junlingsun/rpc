@@ -2,6 +2,8 @@ package com.junling.rpc.client;
 
 import com.junling.rpc.common.bean.RpcRequest;
 import com.junling.rpc.common.bean.RpcResponse;
+import com.junling.rpc.registry.ServiceRegistry;
+import com.junling.rpc.registry.nacos.NacosRegistry;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -9,14 +11,14 @@ import java.lang.reflect.Proxy;
 
 public class RpcClientProxy implements InvocationHandler {
 
-    private String host;
-    private Integer port;
+//    private String host;
+//    private Integer port;
+    private ServiceRegistry serviceRegistry;
     private RpcClient rpcClient;
 
-    public RpcClientProxy(String host, Integer port, RpcClient rpcClient){
-        this.host = host;
-        this.port = port;
+    public RpcClientProxy(ServiceRegistry serviceRegistry, RpcClient rpcClient){
         this.rpcClient = rpcClient;
+        this.serviceRegistry = serviceRegistry;
     }
 
     public <T> T getProxy(Class<T> iface) {
@@ -26,14 +28,17 @@ public class RpcClientProxy implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
+
         RpcRequest rpcRequest = new RpcRequest();
         rpcRequest.setInterfaceName(method.getDeclaringClass().getName());
         rpcRequest.setMethodName(method.getName());
         rpcRequest.setParameters(args);
         rpcRequest.setParameterTypes(method.getParameterTypes());
-        Object object = rpcClient.send(host, port, rpcRequest);
 
-        RpcResponse response = (RpcResponse) rpcClient.send(host, port, rpcRequest);
+        String address = serviceRegistry.discover(rpcRequest.getInterfaceName());
+        String[] arr = address.split(":");
+
+        RpcResponse response = (RpcResponse) rpcClient.send(arr[0], Integer.parseInt(arr[1]), rpcRequest);
         return response.getData();
     }
 }

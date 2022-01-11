@@ -2,5 +2,5 @@ package com.junling.rpc.server;
 
 public interface RpcServer {
 
-    void publish(Object service);
+    <T> void publish(Object service, Class<T> iface);
 }

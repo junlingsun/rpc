@@ -1,4 +1,5 @@
 import com.junling.rpc.common.map.ServiceProvider;
+import com.junling.rpc.registry.nacos.NacosRegistry;
 import com.junling.rpc.sample.api.UserService;
 import com.junling.rpc.sample.server.UserServiceImpl;
 import com.junling.rpc.server.RpcServer;
@@ -8,7 +9,8 @@ public class ServerTest {
 
     public static void main(String[] args) {
         UserService userService = new UserServiceImpl();
-        RpcServer rpcServer = new NettyServer(8888);
-        rpcServer.publish(userService);
+        RpcServer rpcServer = new NettyServer("localhost", 8888, new NacosRegistry());
+
+        rpcServer.publish(userService, UserService.class);
     }
 }

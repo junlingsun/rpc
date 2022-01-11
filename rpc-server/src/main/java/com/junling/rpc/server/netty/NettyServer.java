@@ -1,6 +1,7 @@
 package com.junling.rpc.server.netty;
 
 import com.junling.rpc.common.map.ServiceProvider;
+import com.junling.rpc.registry.ServiceRegistry;
 import com.junling.rpc.server.RpcServer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -15,15 +16,20 @@ import io.netty.handler.logging.LoggingHandler;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+
 @Data
 @AllArgsConstructor
 public class NettyServer implements RpcServer {
+    private String host;
     private Integer port;
+    private ServiceRegistry serviceRegistry;
 
     @Override
-    public void publish(Object service){
+    public <T> void publish(Object service, Class<T> iface){
         ServiceProvider serviceProvider = new ServiceProvider();
         serviceProvider.serviceRegister(service);
+        String address = host +":"+port;
+        serviceRegistry.register(iface.getName(), address);
         start();
     }
 
