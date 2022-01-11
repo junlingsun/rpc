@@ -1,5 +1,6 @@
 package com.junling.rpc.server.netty;
 
+import com.junling.rpc.common.map.ServiceProvider;
 import com.junling.rpc.server.RpcServer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -20,6 +21,13 @@ public class NettyServer implements RpcServer {
     private Integer port;
 
     @Override
+    public void publish(Object service){
+        ServiceProvider serviceProvider = new ServiceProvider();
+        serviceProvider.serviceRegister(service);
+        start();
+    }
+
+
     public void start() {
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
