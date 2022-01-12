@@ -7,6 +7,7 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.alibaba.nacos.api.naming.pojo.ServiceInfo;
 import com.junling.rpc.registry.ServiceRegistry;
+import com.junling.rpc.registry.loadbalance.RpcLoadBalancer;
 
 import java.util.List;
 
@@ -14,6 +15,11 @@ public class NacosRegistry implements ServiceRegistry {
 
     private static String serverAddr = "localhost:8848";
     private static NamingService namingService;
+    private RpcLoadBalancer rpcLoadBalancer;
+
+    public NacosRegistry(RpcLoadBalancer rpcLoadBalancer) {
+        this.rpcLoadBalancer = rpcLoadBalancer;
+    }
 
     static {
         try{
@@ -26,6 +32,7 @@ public class NacosRegistry implements ServiceRegistry {
 
     @Override
     public void register(String serviceName, String serviceAddress) {
+        System.out.println("register>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.");
         String[] arr = serviceAddress.split(":");
         try {
             namingService.registerInstance(serviceName, arr[0], Integer.parseInt(arr[1]));
@@ -40,20 +47,43 @@ public class NacosRegistry implements ServiceRegistry {
 
         try {
             List<Instance> allInstances = namingService.getAllInstances(serviceName);
-            Instance instance = allInstances.get(0);
+            if (allInstances.size() < 1) {
+                throw new Exception("nacos is not started");
+            }
+
+
+            Instance instance = null;
+            if (rpcLoadBalancer != null) {
+                instance = rpcLoadBalancer.getInstance(allInstances);
+            }else {
+                instance = allInstances.get(0);
+            }
             String ip = instance.getIp();
             Integer port = instance.getPort();
             return ip+":"+port;
         } catch (NacosException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
 
+    /**
+     * TODO: need to implement the deregister to server side.
+     * @throws NacosException
+     */
+    public void deregister() throws NacosException {
 
-    public String deregister() throws NacosException {
         ListView<String> services = namingService.getServicesOfServer(1, 100);
-        return null;
+        List<String> data = services.getData();
+
+        for (String service: data) {
+            List<Instance> allInstances = namingService.getAllInstances(service);
+            for (Instance instance: allInstances) {
+                namingService.deregisterInstance(service, instance);
+            }
+        }
 
     }
 }
